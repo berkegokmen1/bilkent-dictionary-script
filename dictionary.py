@@ -5,8 +5,10 @@ from colorama import init
 from termcolor import colored
 import csv
 import re
+import concurrent.futures
 
 init()
+
 
 tr_definitions = []
 en_definition = ""
@@ -22,7 +24,17 @@ sentences = []
 
 pattern = '(\w+)\s*(-t|-d|-c|-syn|-sen|-wf)?\s*(-n|-v|-adj|-adv)?'
 
-star_colors = ["red", "green", "yellow", "blue", "magenta", "white"]
+version = "2.0"
+
+
+def control_execution(*args):  # funtion, word, form
+    try:
+        if(not args[0] == get_forms):
+            args[0](args[1])
+        else:
+            args[0](args[1], args[2])
+    except:
+        pass
 
 
 def get_turk(word):
@@ -62,10 +74,13 @@ def get_en(word):
     soup = BeautifulSoup(source, "lxml")
     def_en = soup.find("div", class_="definition").find("div").text
 
+    global en_definition
     if ("The definition of" in def_en):
         def_en = (def_en[18]).upper() + def_en[19:]
+        en_definition = def_en
         return def_en
     else:
+        en_definition = def_en
         return def_en
 
 
@@ -155,79 +170,37 @@ def get_collocations(word):
 
 
 def search(word):
-    try:
-        print(colored("Turkish:", "cyan", "on_grey", ["bold"]), get_turk(word))
-    except:
-        print(colored("Turkish:", "cyan", "on_grey", ["bold"]), None)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        f1 = executor.submit(control_execution, get_turk, word)
+        f2 = executor.submit(control_execution, get_en, word)
+        f3 = executor.submit(control_execution, get_collocations, word)
+        f4 = executor.submit(control_execution, get_synonyms, word)
+        f5 = executor.submit(control_execution, get_sentences, word)
+        searchWF(word)
 
-    try:
-        print(colored("Definition:", "cyan",
-                      "on_grey", ["bold"]), get_en(word))
-    except:
-        print(colored("Definition:", "cyan", "on_grey", ["bold"]), colored(
-            "ERROR", "red", "on_grey", ["bold"]))
 
-    try:
-        print(colored("Collocations:", "cyan", "on_grey",
-                      ["bold"]), get_collocations(word))
-    except:
-        print(colored("Collocations:", "cyan", "on_grey",
-                      ["bold"]), colored("100 words/day limit reached.", "white", "on_grey", ["reverse"]))
-
-    try:
-        print(colored("Synonyms:", "cyan", "on_grey",
-                      ["bold"]), get_synonyms(word))
-    except:
-        print(colored("Synonyms:", "cyan", "on_grey", ["bold"]), None)
-
-    try:
-        print(colored("Sentences:", "cyan", "on_grey",
-                      ["bold"]), get_sentences(word))
-    except:
-        print(colored("Sentences:", "cyan", "on_grey", ["bold"]), None)
-
-    print(colored("Word formations:", "cyan", "on_grey", ["bold"]))
-    try:
-        print(colored("\tNoun:", "cyan", "on_grey",
-                      ["bold"]), get_forms(word, "noun"))
-    except:
-        print(colored("\tNoun:", "cyan", "on_grey", ["bold"]), None)
-
-    try:
-        print(colored("\tVerb:", "cyan", "on_grey",
-                      ["bold"]), get_forms(word, "verb"))
-    except:
-        print(colored("\tVerb:", "cyan", "on_grey", ["bold"]), None)
-
-    try:
-        print(colored("\tAdjective:", "cyan", "on_grey",
-                      ["bold"]), get_forms(word, "adjective"))
-    except:
-        print(colored("\tAdjective:", "cyan", "on_grey", ["bold"]), None)
-
-    try:
-        print(colored("\tAdverb:", "cyan", "on_grey",
-                      ["bold"]), get_forms(word, "adverb"))
-    except:
-        print(colored("\tAdverb:", "cyan", "on_grey", ["bold"]), None)
+def searchWF(word):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        f6 = executor.submit(control_execution, get_forms, word, "noun")
+        f7 = executor.submit(control_execution, get_forms, word, "verb")
+        f8 = executor.submit(control_execution, get_forms, word, "adjective")
+        f9 = executor.submit(control_execution, get_forms, word, "adverb")
 
 
 def store(word):
-    with open("words.csv", "a") as csv_file:
+    with open("wordList.csv", "a") as csv_file:
         csv_writer = csv.writer(csv_file)
         try:
             csv_writer.writerow(["", "", "", "", "", "", "", "", "", ""])
             csv_writer.writerow(["Word", "Turkish", "Definition", "Collocations", "Synonyms",
                                  "Sentences", "Noun F.", "Verb F.", "Adjective F.", "Adverb F."])
-            csv_writer.writerow([word, get_turk(word), get_en(word), get_collocations(word), get_synonyms(word), get_sentences(
-                word), get_forms(word, "noun"), get_forms(word, "verb"), get_forms(word, "adjective"), get_forms(word, "adverb")])
+            csv_writer.writerow([word, ", ".join(tr_definitions), en_definition, ", ".join(collocations), ", ".join(synonyms), " || ".join(
+                sentences), ", ".join(word_forms["Noun"]), ", ".join(word_forms["Verb"]), ", ".join(word_forms["Adjective"]), ", ".join(word_forms["Adverb"])])
         except:
-            try:
-                csv_writer.writerow([word, get_turk(word), get_en(word), "100 words/day limit reached.", get_synonyms(word), get_sentences(
-                    word), get_forms(word, "noun"), get_forms(word, "verb"), get_forms(word, "adjective"), get_forms(word, "adverb")])
-            except:
-                pass
+            pass
 
+
+print(f"berkegokmen dictionary script version {version}\n")
 
 print(colored("\nFLAGS", "white", "on_grey", ["bold", "underline"]))
 print("")
@@ -287,6 +260,37 @@ while True:
             _word_ = match.group(1)
             if (match.group(2) == None):
                 search(_word_)
+                print(colored("Turkish:", "cyan", "on_grey",
+                              ["bold"]), ", ".join(tr_definitions))
+                print(colored("Definition:", "cyan",
+                              "on_grey", ["bold"]), en_definition)
+                try:
+                    print(colored("Collocations:", "cyan", "on_grey",
+                                  ["bold"]), ", ".join(collocations))
+                except:
+                    collocations = []
+                    print(colored("Collocations:", "cyan", "on_grey",
+                                  ["bold"]), ", ".join(collocations))
+
+                print(colored("Synonyms:", "cyan", "on_grey",
+                              ["bold"]), ", ".join(synonyms))
+
+                print(colored("Sentences:", "cyan", "on_grey",
+                              ["bold"]), " || ".join(sentences))
+
+                print(colored("Word formations:", "cyan", "on_grey", ["bold"]))
+                print(colored("\tNoun:", "cyan", "on_grey",
+                              ["bold"]), ", ".join(word_forms["Noun"]))
+
+                print(colored("\tVerb:", "cyan", "on_grey",
+                              ["bold"]), ", ".join(word_forms["Verb"]))
+
+                print(colored("\tAdjective:", "cyan", "on_grey",
+                              ["bold"]), ", ".join(word_forms["Adjective"]))
+
+                print(colored("\tAdverb:", "cyan", "on_grey",
+                              ["bold"]), ", ".join(word_forms["Adverb"]))
+
                 store(_word_)
             elif (match.group(2) == "-t"):
                 try:
@@ -325,35 +329,21 @@ while True:
                                   "on_grey", ["bold"]), None)
             elif (match.group(2) == "-wf"):
                 if (match.group(3) == None):
+                    searchWF(_word_)
                     print(colored("Word formations:",
                                   "cyan", "on_grey", ["bold"]))
-                    try:
-                        print(colored("\tNoun:", "cyan", "on_grey",
-                                      ["bold"]), get_forms(_word_, "noun"))
-                    except:
-                        print(colored("\tNoun:", "cyan",
-                                      "on_grey", ["bold"]), None)
+                    print(colored("\tNoun:", "cyan", "on_grey",
+                                  ["bold"]), ", ".join(word_forms["Noun"]))
 
-                    try:
-                        print(colored("\tVerb:", "cyan", "on_grey",
-                                      ["bold"]), get_forms(_word_, "verb"))
-                    except:
-                        print(colored("\tVerb:", "cyan",
-                                      "on_grey", ["bold"]), None)
+                    print(colored("\tVerb:", "cyan", "on_grey",
+                                  ["bold"]), ", ".join(word_forms["Verb"]))
 
-                    try:
-                        print(colored("\tAdjective:", "cyan", "on_grey",
-                                      ["bold"]), get_forms(_word_, "adjective"))
-                    except:
-                        print(colored("\tAdjective:", "cyan",
-                                      "on_grey", ["bold"]), None)
+                    print(colored("\tAdjective:", "cyan", "on_grey",
+                                  ["bold"]), ", ".join(word_forms["Adjective"]))
 
-                    try:
-                        print(colored("\tAdverb:", "cyan", "on_grey",
-                                      ["bold"]), get_forms(_word_, "adverb"))
-                    except:
-                        print(colored("\tAdverb:", "cyan",
-                                      "on_grey", ["bold"]), None)
+                    print(colored("\tAdverb:", "cyan", "on_grey",
+                                  ["bold"]), ", ".join(word_forms["Adverb"]))
+
                 elif(match.group(3) == "-n"):
                     try:
                         print(colored("Noun:", "cyan", "on_grey",
