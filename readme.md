@@ -6,6 +6,7 @@ pip install beautifulsoup4
 pip install requests
 pip install termcolor
 pip install colorama
+pip install lxml
 ```
 
 
