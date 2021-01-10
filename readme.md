@@ -11,7 +11,7 @@ pip install lxml
 
 
 
-## Desktop shortcut for UNIX (Mac/Linux) users
+## Desktop shortcut for Mac users
 
 0. (Shortcut for windows are on the way)
 1. open dict.command using a text editor.
