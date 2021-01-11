@@ -17,7 +17,7 @@ pip install lxml
 1. open dict.command using a text editor.
 2. type in the folder path to the specified area.
 ```zsh
-echo running bilkent...
+echo running dictionary...
 clear
 cd -PATH TO THE FOLDER CONTAINING PY FILES-
 python3 dictionary.py
