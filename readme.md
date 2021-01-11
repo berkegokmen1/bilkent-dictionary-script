@@ -21,15 +21,13 @@ echo running dictionary...
 clear
 cd -PATH TO THE FOLDER CONTAINING PY FILES-
 python3 dictionary.py
-cd /Applications
 ```
 3. save the files and exit.
 
 #### If you see an error saying “File could not be executed because you do not have appropriate access privileges” then try running the command below
 
 ```zsh
-chmod u+x /Users/-YOUR USERNAME-/Desktop/stars.command
-chmod u+x /Users/-YOUR USERNAME-/Desktop/zoom.command
+chmod u+x /Users/-YOUR USERNAME-/Desktop/dict.command
 ```
 You can then use the .command files to run the script
 
